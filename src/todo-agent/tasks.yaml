@@ -1,0 +1,81 @@
+# tasks.yaml
+# 业务地图： 定义【主题 -> 任务 -> 工具】 映射关系
+# 
+# 上下文工程引擎读取此文件，构建意图识别 Prompt
+# 当需要新增业务能力时，只需在这里添加配置即可
+
+biz_codes:
+  agents:
+    topics:
+      # 主题1：代办查询
+      - name: 待办查询
+        description: 用户想查看，搜索自己的待办事项，任务列表
+        examples:
+          - 我有什么代办
+          - 查一下今天的任务
+          - 有哪些未完成的事情
+
+        tasks:
+          - name: 查询所有代办
+            description: 列出用户的所有待办事项
+            tool: get_todos
+            examples:
+              - 我的代办列表
+              - 所有任务
+              - 帮我看看有什么事
+
+          - name: 查询今日代办
+            description: 只查询今天需要完成的任务
+            tool: get_today_todos
+            examples:
+              - 今天要做什么
+              - 今天的任务
+              - 今日代办
+
+      - name: 任务操作
+        description: 用户想创建，修改，完成或删除某个任务
+        examples:
+          - 帮我添加一个任务
+          - 我完成了那个会议
+          - 把买菜删掉
+
+        task:
+          - name: 创建任务
+            description: 新建一个代办事项，需要标题和可选的截止时间
+            tool: create_todo
+            slots:
+              - code: title
+                name: 任务标题
+                required: true,
+                examples: ["开周会", "买菜", "写报告"]
+              - code: due_date
+                name: 截至日期
+                required: false,
+                examples: ["今天", "明天下午3点", "2026-07-02"]
+              - code: priority
+                name: 优先级
+                required: false
+                examples: ["高","中","低"]
+
+          - name: 完成任务
+            description: 标记某个任务为已完成
+            tool: complete_todo
+            slots:
+              - code: title
+                name: 任务标题
+                required: true
+      
+      - name: 通用咨询
+        description: 其他与日期，时间管理相关的通用问题
+        examples:
+          - 怎么用这个助手
+          - 今天是星期几
+          - 帮我规划一个时间
+
+        tasks:
+          - name: 通用问答
+            description: 回答各种通用的日程管理问题
+            tool: get_other
+            examples:
+              - 如何提高效率
+              - 怎么安排工作
