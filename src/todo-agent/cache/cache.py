@@ -16,7 +16,7 @@ class SessionCache:
         self._cache = TTLCache(maxsize=maxsize, ttl=ttl)
         self._lock = threading.Lock()
 
-    def get(self, key: str, default: None) -> Any:
+    def get(self, key: str, default= None) -> Any:
         with self._lock:
             return self._cache.get(key, default)
         

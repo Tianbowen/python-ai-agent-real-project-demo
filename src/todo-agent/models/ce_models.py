@@ -33,7 +33,7 @@ class Task:
     code: str
     name: str
     tool: str = "get_other"
-    task_id: str = field(default_factory=lambda: uuid.uuid4().hax[:8])
+    task_id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
     slots: Dict[str, Slot] = field(default_factory=dict)
 
     def slot_value(self, code: str, default: Any = None) -> Any:

@@ -20,8 +20,8 @@ class StreamCallbackHandler:
 
     def __init__(self, context=None):
         self.context = context
-        self._queue = asyncio.Queue = asyncio.Queue(maxsize=200)
-        self._error = Optional[str] = None
+        self._queue: asyncio.Queue = asyncio.Queue(maxsize=200)
+        self._error: Optional[str] = None
         self._cancelled: bool = False
         self._ended: bool = False
         self._text_buffer: list[str] = [] # 收集完整LLM输出
@@ -41,8 +41,8 @@ class StreamCallbackHandler:
         """标记错误状态"""
         self._error = message
 
-    def set_canelled(self, flag: bool):
-        self_cancelled = flag
+    def set_cancelled(self, flag: bool):
+        self._cancelled = flag
 
     def add_callback(self, fn: Callable):
         """注册完成回调（工具执行完毕后触发）"""
@@ -90,5 +90,15 @@ class StreamCallbackHandler:
                 fn()
             except Exception as e:
                 logger.error(f"回调执行失败：{e}")
+
+    async def put_data(self, biz_code: str, answer: str, data: list = None):
+        self._biz_data = {
+            "bizCode": biz_code,
+            "answer": answer,
+            "type": 0,
+            "data": data or []
+        }
+        payload = json.dumps(self._biz_data, ensure_ascii=False)
+        await self._queue.put(payload)
 
         

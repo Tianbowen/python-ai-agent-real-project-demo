@@ -29,7 +29,7 @@ class ResponseResult:
             "bizCode": biz_code,
             "answer": answer,
             "type": 0,
-            "data": data or {}
+            "data": data or []
         })
     
     @classmethod

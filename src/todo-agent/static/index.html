@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo AI 助手</title>
+<style>
+/* ── 全局重置 ────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Microsoft YaHei", sans-serif;
+  background: #eef0f3;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 应用容器 ────────────────────────────────── */
+.app {
+  width: 780px;
+  max-width: 98vw;
+  height: 90vh;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── 头部 ────────────────────────────────────── */
+.header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.header-title .icon { font-size: 22px; }
+.header-subtitle {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.btn-new {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+.btn-new:hover { background: rgba(255,255,255,0.28); }
+
+/* ── 消息区域 ────────────────────────────────── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+/* ── 消息气泡 ────────────────────────────────── */
+.message { display: flex; gap: 10px; animation: fadeUp 0.2s ease; }
+.message.user { flex-direction: row-reverse; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+.message.user .avatar { background: #2563eb; color: #fff; font-size: 13px; }
+.message.ai   .avatar { background: #f3f4f6; color: #374151; }
+
+.bubble-wrap { max-width: 72%; display: flex; flex-direction: column; gap: 8px; }
+.message.user .bubble-wrap { align-items: flex-end; }
+
+.bubble {
+  padding: 11px 15px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.message.user .bubble {
+  background: #2563eb;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.message.ai .bubble {
+  background: #f8f9fa;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+/* ── 打字中光标 ──────────────────────────────── */
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #374151;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: blink 0.7s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── 思考中动画 ──────────────────────────────── */
+.thinking {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+  width: fit-content;
+}
+.thinking span {
+  width: 7px; height: 7px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: bounce 1.2s ease-in-out infinite;
+}
+.thinking span:nth-child(2) { animation-delay: 0.2s; }
+.thinking span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40%           { transform: translateY(-6px); }
+}
+
+/* ── Todo 卡片列表 ───────────────────────────── */
+.todo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+.todo-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  border-left: 3px solid #2563eb;
+  font-size: 13.5px;
+  transition: box-shadow 0.15s;
+}
+.todo-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.todo-card.done { opacity: 0.5; border-left-color: #9ca3af; }
+.todo-card.done .todo-title { text-decoration: line-through; }
+.todo-card.priority-high { border-left-color: #ef4444; }
+.todo-card.priority-low  { border-left-color: #6b7280; }
+
+.todo-check { font-size: 16px; }
+.todo-info { flex: 1; min-width: 0; }
+.todo-title { font-weight: 500; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.todo-meta  { font-size: 12px; color: #9ca3af; margin-top: 1px; }
+.todo-priority {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.priority-tag-高 { background: #fee2e2; color: #dc2626; }
+.priority-tag-中 { background: #dbeafe; color: #2563eb; }
+.priority-tag-低 { background: #f3f4f6; color: #6b7280; }
+
+/* ── 欢迎屏 ──────────────────────────────────── */
+.welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  gap: 12px;
+  padding-bottom: 40px;
+}
+.welcome .big-icon { font-size: 52px; }
+.welcome h2 { font-size: 18px; color: #374151; font-weight: 600; }
+.welcome p  { font-size: 14px; text-align: center; line-height: 1.7; }
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.suggestion {
+  padding: 7px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #fff;
+}
+.suggestion:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+
+/* ── 输入区域 ────────────────────────────────── */
+.input-area {
+  padding: 14px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  background: #fff;
+  flex-shrink: 0;
+}
+.input-wrap { flex: 1; position: relative; }
+#input {
+  width: 100%;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 14.5px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+  color: #111827;
+}
+#input:focus { border-color: #2563eb; }
+#input::placeholder { color: #b0b7c3; }
+.btn-send {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.btn-send:hover { background: #1d4ed8; }
+.btn-send:active { transform: scale(0.94); }
+.btn-send:disabled { background: #9ca3af; cursor: not-allowed; }
+.btn-send svg { width: 18px; height: 18px; }
+
+/* ── 错误消息 ────────────────────────────────── */
+.error-bubble {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+/* ── 分割线（时间戳之类） ──────────────────────── */
+.divider {
+  text-align: center;
+  font-size: 12px;
+  color: #c4c9d4;
+  position: relative;
+}
+.divider::before, .divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 38%;
+  height: 1px;
+  background: #eeeff1;
+}
+.divider::before { left: 0; }
+.divider::after  { right: 0; }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- 头部 -->
+  <div class="header">
+    <div>
+      <div class="header-title">
+        <span class="icon">✅</span>
+        Todo AI 助手
+      </div>
+      <div class="header-subtitle">由大语言模型驱动的智能日程管理助手</div>
+    </div>
+    <button class="btn-new" onclick="newConversation()">＋ 新对话</button>
+  </div>
+
+  <!-- 消息区域 -->
+  <div class="messages" id="messages">
+    <!-- 欢迎屏（初始显示） -->
+    <div class="welcome" id="welcome">
+      <div class="big-icon">📋</div>
+      <h2>你好，我是 Todo AI 助手</h2>
+      <p>我可以帮你查看待办、创建任务、规划日程<br>试着问我下面这些问题：</p>
+      <div class="suggestions">
+        <div class="suggestion" onclick="suggest(this)">我今天有什么任务？</div>
+        <div class="suggestion" onclick="suggest(this)">查看所有待办事项</div>
+        <div class="suggestion" onclick="suggest(this)">帮我添加一个任务</div>
+        <div class="suggestion" onclick="suggest(this)">怎么高效管理时间？</div>
+        <div class="suggestion" onclick="suggest(this)">创建"明天开会"提醒</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入区域 -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea id="input" rows="1" placeholder="发消息给 AI 助手（Enter 发送，Shift+Enter 换行）"></textarea>
+    </div>
+    <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  状态管理
+// ══════════════════════════════════════════════
+
+// 会话 ID：存在 sessionStorage，刷新页面后保持（关闭标签才清除）
+let conversationId = sessionStorage.getItem('conversationId') || generateId();
+let isStreaming = false;    // 是否正在等待 AI 回复
+
+function generateId() {
+  const id = 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+  sessionStorage.setItem('conversationId', id);
+  return id;
+}
+
+function newConversation() {
+  if (isStreaming) return;
+  conversationId = generateId();
+  // 清空消息区，重新显示欢迎屏
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="big-icon">📋</div>
+      <h2>你好，我是 Todo AI 助手</h2>
+      <p>我可以帮你查看待办、创建任务、规划日程<br>试着问我下面这些问题：</p>
+      <div class="suggestions">
+        <div class="suggestion" onclick="suggest(this)">我今天有什么任务？</div>
+        <div class="suggestion" onclick="suggest(this)">查看所有待办事项</div>
+        <div class="suggestion" onclick="suggest(this)">帮我添加一个任务</div>
+        <div class="suggestion" onclick="suggest(this)">怎么高效管理时间？</div>
+        <div class="suggestion" onclick="suggest(this)">创建"明天开会"提醒</div>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  DOM 操作工具
+// ══════════════════════════════════════════════
+
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+}
+
+function scrollToBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendUserMessage(text) {
+  hideWelcome();
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'message user';
+  el.innerHTML = `
+    <div class="avatar">你</div>
+    <div class="bubble-wrap">
+      <div class="bubble">${escapeHtml(text)}</div>
+    </div>`;
+  msgs.appendChild(el);
+  scrollToBottom();
+}
+
+function appendThinking() {
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'message ai';
+  el.id = 'thinking';
+  el.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="bubble-wrap">
+      <div class="thinking">
+        <span></span><span></span><span></span>
+      </div>
+    </div>`;
+  msgs.appendChild(el);
+  scrollToBottom();
+  return el;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking');
+  if (el) el.remove();
+}
+
+function createAIMessageEl() {
+  removeThinking();
+  const msgs = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'message ai';
+  wrap.innerHTML = `
+    <div class="avatar">🤖</div>
+    <div class="bubble-wrap">
+      <div class="bubble" id="streaming-bubble"><span class="cursor"></span></div>
+    </div>`;
+  msgs.appendChild(wrap);
+  return wrap;
+}
+
+function updateStreamingBubble(text) {
+  const bubble = document.getElementById('streaming-bubble');
+  if (bubble) {
+    bubble.innerHTML = escapeHtml(text) + '<span class="cursor"></span>';
+    scrollToBottom();
+  }
+}
+
+function finalizeStreamingBubble(text, hasError) {
+  const bubble = document.getElementById('streaming-bubble');
+  if (bubble) {
+    bubble.removeAttribute('id');
+    bubble.innerHTML = escapeHtml(text);
+    if (hasError) bubble.classList.add('error-bubble');
+  }
+}
+
+function appendTodoCards(msgWrap, todos) {
+  if (!todos || todos.length === 0) return;
+  const bubbleWrap = msgWrap.querySelector('.bubble-wrap');
+  const cardsEl = document.createElement('div');
+  cardsEl.className = 'todo-cards';
+  todos.forEach(todo => {
+    const done = todo['状态'] === '已完成';
+    const priority = todo['优先级'] || '中';
+    const card = document.createElement('div');
+    card.className = `todo-card priority-${priority} ${done ? 'done' : ''}`;
+    card.innerHTML = `
+      <div class="todo-check">${done ? '✅' : '⬜'}</div>
+      <div class="todo-info">
+        <div class="todo-title">${escapeHtml(todo['标题'] || todo.title || '')}</div>
+        <div class="todo-meta">${escapeHtml(todo['截止'] || todo.due_date || '无截止时间')}</div>
+      </div>
+      <div class="todo-priority priority-tag-${priority}">${priority}</div>`;
+    cardsEl.appendChild(card);
+  });
+  bubbleWrap.appendChild(cardsEl);
+  scrollToBottom();
+}
+
+function escapeHtml(text) {
+  const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+  return String(text).replace(/[&<>"']/g, c => map[c]);
+}
+
+// ══════════════════════════════════════════════
+//  核心：发送消息 + 解析 SSE 流
+// ══════════════════════════════════════════════
+
+async function sendMessage() {
+  if (isStreaming) return;
+
+  const input = document.getElementById('input');
+  const query = input.value.trim();
+  if (!query) return;
+
+  // 清空输入框，重置高度
+  input.value = '';
+  input.style.height = 'auto';
+
+  // 显示用户消息
+  appendUserMessage(query);
+
+  // 禁用输入
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  // 显示"思考中"动画
+  appendThinking();
+
+  let accText = '';       // 累积的 token 文本
+  let msgWrap = null;     // AI 消息容器元素
+  let buffer = '';        // 未处理完的字节缓冲
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        bizCode: 'todo-agent',
+        conversationId,
+        userId: 'demo_user',   // 演示用，实际替换为真实用户 ID
+      }),
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    // 逐块读取流数据
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // 按行切割，处理完整的 SSE 行
+      // SSE 格式：每条消息以 "data: " 开头，消息之间用空行分隔
+      const lines = buffer.split('\n');
+      buffer = lines.pop();   // 最后一行可能不完整，留到下次
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+
+        const payload = trimmed.slice(5).trim();
+        if (payload === '[DONE]') continue;
+
+        let parsed;
+        try {
+          parsed = JSON.parse(payload);
+        } catch {
+          continue;  // 忽略无法解析的行
+        }
+
+        // ── 处理不同类型的数据包 ────────────────────
+
+        if (parsed.token) {
+          // 第一个 token 到来时，切换"思考中"为实际消息气泡
+          if (!msgWrap) {
+            msgWrap = createAIMessageEl();
+          }
+          accText += parsed.token;
+          updateStreamingBubble(accText);
+        }
+
+        else if (parsed.error) {
+          if (!msgWrap) msgWrap = createAIMessageEl();
+          accText = parsed.error;
+          updateStreamingBubble(accText);
+        }
+
+        else if (parsed.bizCode) {
+          // 最终业务数据包（含结构化 data）
+          // 如果有 Todo 列表，渲染卡片
+          if (parsed.data && parsed.data.length > 0 && msgWrap) {
+            appendTodoCards(msgWrap, parsed.data);
+          }
+          // answer 字段可能比 token 更完整，用于最终文本
+          if (parsed.answer && !accText) {
+            if (!msgWrap) msgWrap = createAIMessageEl();
+            accText = parsed.answer;
+          }
+        }
+      }
+    }
+
+  } catch (err) {
+    removeThinking();
+    if (!msgWrap) msgWrap = createAIMessageEl();
+    accText = `连接失败：${err.message}。请检查服务是否正常运行。`;
+    finalizeStreamingBubble(accText, true);
+    isStreaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    return;
+  }
+
+  // 移除光标，完成渲染
+  finalizeStreamingBubble(accText, false);
+  isStreaming = false;
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+
+// ══════════════════════════════════════════════
+//  交互辅助
+// ══════════════════════════════════════════════
+
+function suggest(el) {
+  const input = document.getElementById('input');
+  input.value = el.textContent;
+  input.focus();
+  autoResize(input);
+  sendMessage();
+}
+
+// Enter 发送，Shift+Enter 换行
+document.getElementById('input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// 输入框自动撑高
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+document.getElementById('input').addEventListener('input', function() {
+  autoResize(this);
+});
+</script>
+</body>
+</html>

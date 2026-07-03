@@ -38,8 +38,7 @@ biz_codes:
           - 帮我添加一个任务
           - 我完成了那个会议
           - 把买菜删掉
-
-        task:
+        tasks:
           - name: 创建任务
             description: 新建一个代办事项，需要标题和可选的截止时间
             tool: create_todo

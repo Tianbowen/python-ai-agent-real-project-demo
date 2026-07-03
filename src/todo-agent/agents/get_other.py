@@ -70,7 +70,7 @@ class GetOtherTool(AbstractTool):
 
         # 推送业务结构化数据 (type=0 标识纯文本回答)
         await self.handler.put_data(
-            biz_code=self.name,
+            biz_code=self.context.request_info.biz_code(),
             answer=full_text,
         )
 
