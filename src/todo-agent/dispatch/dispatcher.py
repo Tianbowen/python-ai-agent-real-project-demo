@@ -55,7 +55,7 @@ class Dispatcher:
         mapped = {
             "query": data.get("query", ""),
             "bizCode": data.get("bizCode", "agents"),
-            "conversation_id": data.get("conversationId", ""),
+            "conversationId": data.get("conversationId", ""),
         }
         return ContextInfo(mapped)
     

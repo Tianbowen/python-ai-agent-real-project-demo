@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from typing import Any
+import uuid
 
 @dataclass
 class RequestInfo:
@@ -33,7 +34,8 @@ class RequestInfo:
         同一个 conversation_id 的多轮请求共享历史记录
         前端负责生成并在每次请求中携带        
         """
-        return str(self.params.get("conversationId", "")).strip()
+        val = str(self.params.get("conversationId", "")).strip()        
+        return val #　if val else uuid.uuid4().hex[:12]
     
     def user_id(self) -> str:
         """用户唯一标识（用于区分不同用户的数据）"""

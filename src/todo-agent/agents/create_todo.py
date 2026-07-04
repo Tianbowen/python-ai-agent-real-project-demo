@@ -65,7 +65,7 @@ class CreateTodoTool(AbstractTool):
 
         self.context.set_result_llm(full_text)
         await self.handler.put_data(
-            tool_name=self.context.request_info.biz_code(),
+            biz_code=self.context.request_info.biz_code(),
             answer=full_text,
             data=[{
                 "id": item.id,
@@ -86,7 +86,7 @@ class CreateTodoTool(AbstractTool):
             "从下面的用户输入中提取任务标题，"
             "只输出标题本身，不超过20字，不要加任何解释：\n{query}"
         )
-        resp = (prompt | self._llm_sync).invoke({"query": query})
+        resp = await (prompt | self._llm_sync).ainvoke({"query": query})
         title = resp.content.strip()
         # 兜底： LLM提取失败时，直接用用户输入的前20字
         return title if title else query[:20]

@@ -534,7 +534,7 @@ async function sendMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         query,
-        bizCode: 'todo-agent',
+        bizCode: 'agents',
         conversationId,
         userId: 'demo_user',   // 演示用，实际替换为真实用户 ID
       }),

@@ -139,6 +139,12 @@ class ContextManager:
             json_match = re.search(r'\{.*\}', text, re.DOTALL)
             if json_match:
                 result = json.loads(json_match.group())
+                topic_name = result.get("topic_name", "通用咨询")
+                task_name = result.get("task_name", "通用回答")
+                llm_tool = result.get("tool", "get_other")
+
+                # 关键：不用LLM给的 tool, 该有代码从配置表
+                tool_name = self._resolve_tool(biz_code, task_name, llm_tool)
                 return (
                     result.get("topic_name", "通用咨询"),
                     result.get("task_name", "通用回答"),
@@ -148,6 +154,32 @@ class ContextManager:
         except Exception as e:
             logger.warning(f"意图识别失败,降级到通用回答:{e}")
         return "通用咨询", "通用回答", "get_other"
+    
+    def _resolve_tool(self, biz_code: str, task_name: str, llm_tool: str) -> str:
+        """
+        从 task.yaml 里用 task_name 查对应的 tool
+
+        为什么这样做：
+        - LLM 判断 task_name (中文匹配中文) 比较准确
+        - LLM 输出 tool 名（英文字符串）容易自由发挥
+        - 改由代码从配置文件精准查找，完全绕开LLM的不稳定性
+        """
+        biz_config = self._tasks_config.get("biz_codes", {}).get(biz_code, {})
+        for topic in biz_config.get("topic", []):
+            for task in topic.get("tasks", []):
+                if task["name"] == task.name:
+                    logger.info(f"[CE] task 映射命中，task={task_name} -> tool={task['tool']}")
+                    return task['tool']
+                
+        # task_name 也对不上（LLM 连 task都编了）
+        # 最后用 LLM 给的 tool名试一次，找不到就降级
+        from agents.tool_registry import ToolRegistry
+        ToolRegistry.init()
+        if llm_tool in ToolRegistry._registry:
+            return llm_tool
+        
+        logger.warning(f"[CE] task=[{task_name}] 未匹配任何配置，降级 get_other")
+        return 'get_other'
     
     # 主入口
     def handle(self, query: str, context: ContextInfo):
