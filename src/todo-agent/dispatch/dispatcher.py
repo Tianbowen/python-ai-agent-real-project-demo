@@ -98,6 +98,31 @@ class Dispatcher:
             handler.set_error(_ERROR_MSG)
             return handler
         
+        # need_confirm: 本轮需要用户确认，推提示后直接结束，不执行工具
+        if context.get_param("need_confirm"):
+            confirm_msg = context.get_param("need_confirm_msg", "请确认是否继续操作？")
+            await handler.put_token(confirm_msg)
+            await handler.put_data(
+                biz_code=context.request_info.biz_code(),
+                answer=confirm_msg,
+                data=[],
+            )
+            await handler.end()
+            return handler
+        
+        # confirm_aborted: 用户取消，推提示后直接结束
+        if context.get_param("confirm_aborted"):
+            abort_msg = "操作已取消，待办列表未做任何修改。"
+            await handler.put_token(abort_msg)
+            await handler.put_data(
+                biz_code=context.request_info.biz_code(),
+                answer=abort_msg,
+                data=[],
+            )
+            await handler.end()
+            return handler
+
+
         # 路由到工具并异步执行
         tool_name = context.get_tool_name()
         logger.info(f"路由到工具：{tool_name}")
@@ -113,10 +138,13 @@ class Dispatcher:
         from agents.tool_registry import ToolRegistry
         from dispatch.process_proxy import ProcessProxy
 
+        # 确认流程：用保存的原始 query 替代用户说的 "确认" 两个字
+        effective_query = context.get_param("confirmed_query") or context.request_info.query()
+
         class _Proxy(ProcessProxy):
             async def do_process(self, query: str, **kwargs):
                 tool = ToolRegistry.get(tool_name, self.handler)
-                await tool.arun(query, **kwargs)
+                await tool.arun(effective_query, **kwargs)
 
         proxy = _Proxy(
             biz_code=context.request_info.biz_code(),

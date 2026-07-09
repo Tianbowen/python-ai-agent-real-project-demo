@@ -47,6 +47,21 @@ class TodoDB:
             if t.due_date and t.due_date.startswith(today)
         ]
     
+    def query(self, date_str: str = None, priority: str = None, status: str = None) -> List[TodoItem]:
+        """按条件组合过滤待办，所有条件均为可选"""
+        result = list(self._store.values())
+
+        if date_str:
+            result = [t for t in result if t.due_date and t.due_date.startswith(date_str)]
+        if priority:
+            result = [t for t in result if t.priority == priority]            
+        if status == "已完成":
+            result = [t for t in result if t.done]
+        if status == "未完成":
+            result = [t for t in result if not t.done]
+
+        return result
+
     def create(self, title: str, due_date: str = None, priority: str = "中") -> TodoItem:
         """
         新增一条代办
@@ -67,6 +82,27 @@ class TodoDB:
         for item in self._store.values():
             if title_keyword in item.title and not item.done:
                 item.done = True
+                return item
+        return None
+    
+    def update(self, title_keyword: str, new_title: str = None, new_due_date: str = None, new_priority: str = None) -> Optional[TodoItem]:
+        """按标题关键词更新待办，只更新传入的非 None 字段"""
+        for item in self._store.values():
+            if title_keyword in item.title:
+                if new_title:
+                    item.title = new_title
+                if new_due_date:
+                    item.due_date = new_due_date
+                if new_priority:
+                    item.priority = new_priority
+                return item
+        return None
+
+    def delete(self, title_keyword: str) -> Optional[TodoItem]:
+        """按标题关键词删除待办，返回被删除的条目"""
+        for item_id, item in list(self._store.items()): # 转 list 再遍历，避免遍历中修改字典报错
+            if title_keyword in item.title:
+                del self._store[item_id]
                 return item
         return None
 

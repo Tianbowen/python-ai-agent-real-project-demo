@@ -43,6 +43,22 @@ class ToolRegistry:
         cls.register(GetTodayTodosTool)
         from agents.complete_todo import CompleteTodoTool
         cls.register(CompleteTodoTool)
+
+        from agents.batch_complete_todo import BatchCompleteTodoTool
+        cls.register(BatchCompleteTodoTool)
+        from agents.daily_summary import DailySummaryTool
+        cls.register(DailySummaryTool)
+        from agents.smart_todo import SmartTodoTool
+        cls.register(SmartTodoTool)
+
+        from agents.update_todo import UpdateTodoTool
+        cls.register(UpdateTodoTool)
+        from agents.delete_todo import DeleteTodoTool
+        cls.register(DeleteTodoTool)
+
+        from agents.query_todos import QueryTodosTool
+        cls.register(QueryTodosTool)
+
         cls._initialized = True
         logger.info(f"工具注册完成，共{len(cls._registry)} 个工具: {list(cls._registry.keys())}")
 

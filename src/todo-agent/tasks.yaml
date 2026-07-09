@@ -6,6 +6,12 @@
 
 biz_codes:
   agents:
+
+    settings:
+      default_model: deepseek-chat
+      history_max_turns: 10
+      timeout_s: 30
+
     topics:
       # 主题1：代办查询
       - name: 待办查询
@@ -31,6 +37,28 @@ biz_codes:
               - 今天要做什么
               - 今天的任务
               - 今日代办
+
+          - name: 按条件查询
+            tool: query_todos
+            description: 按优先级，状态，日期范围筛选任务
+            examples:
+              - 明天有什么任务
+              - 查一下后天的待办
+              - 有哪些高优先级任务
+              - 还有哪些没完成的
+              - 2026-07-10 有什么安排
+            slots:
+              - code: priority
+                name: 优先级
+                required: false
+                options: ["高", "中", "低"]
+              - code: status
+                name: 完成状态
+                required: false
+                options: ["未完成", "已完成"]
+              - code: date_range
+                name: 日期范围
+                required: false
 
       - name: 任务操作
         description: 用户想创建，修改，完成或删除某个任务
@@ -63,8 +91,58 @@ biz_codes:
               - code: title
                 name: 任务标题
                 required: true
+
+          - name: 修改任务
+            tool: update_todo
+            description: 更新某个待办事项
+            slots:
+              - code: title
+                name: 原任务标题
+                required: true
+              - code: new_title
+                name: 新标题
+                required: false
+              - code: new_due_date
+                name: 新截止日期
+                required: false
+              - code: new_priority
+                name: 新优先级
+                required: false
+          
+          - name: 删除任务
+            tool: delete_todo
+            confirm: true
+            slots:
+              - code: title
+                name: 任务标题
+                required: true
+
+          - name: 批量完成任务
+            tool: batch_complete_todo
+            description: 把符合条件的多个任务批量标记为完成
+            slots:
+              - code: priority
+                name: 优先级筛选
+                required: false
+
+          - name: 今日摘要
+            tool: daily_summary
+            description: 生成今日工作摘要和完成统计
+
+          - name: 智能完成或创建
+            tool: smart_todo
+            description: 完成任务
+
+      - name: 统计分析
+        description: 查看任务完成情况，进度统计
+        task:
+          - name: 今日完成统计
+            tool: stats_today
+          - name: 本周进度统计
+            tool: stats_week       
       
       - name: 通用咨询
+
         description: 其他与日期，时间管理相关的通用问题
         examples:
           - 怎么用这个助手
@@ -78,3 +156,12 @@ biz_codes:
             examples:
               - 如何提高效率
               - 怎么安排工作
+  hr:
+    topics:
+      - name: 假期管理
+        tasks:
+          - name: 查询剩余假期
+            tool: query_leave
+          - name: 申请假期
+            tool: apply_leave
+            confirm: true

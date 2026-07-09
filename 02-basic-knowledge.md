@@ -205,12 +205,16 @@ biz_codes:
           task:
             - name: 查询医生
               tool: get_doctor
+              examples:
+              - "帮我查询张三医生"
               slots:
                 - code: dept_name
                   name: 科室名称
 ```
 
 需要能读懂这个YAML，理解它如何被 TaskConfigLoader 解析成 Python 对象
+
+ tasks.yaml 里的 examples 本质上是 few-shot 示例，是提升 LLM 分类准确率最有效的手段。但它们只是配置数据，必须由 _build_topics_desc() 把它们拼进 Prompt 才能生效——配置写了不读等于没写。
 
 ### Pydantic 结构化输出 Parser
 
@@ -225,3 +229,10 @@ result = TopicClassificationResult = chain.invoke(...)
 ```
 
 LLM的输出需要被强制解析成结构体，失败要处理 -> 是 LLM Agent 可靠性的关键手段
+
+
+## 其他
+
+two-turn 状态机：pending_confirm 跨轮保存在 session 里，save_session() 是跨轮记忆的关键
+few-shot routing：examples 写在 yaml 里还不够，必须在 _build_topics_desc() 里读出来拼进 Prompt LLM 才能看到
+LLM 提取结构化参数：用 re.search(r'\{.*\}') + json.loads() 从 LLM 输出中稳定提取 JSON

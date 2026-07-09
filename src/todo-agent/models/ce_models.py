@@ -79,7 +79,15 @@ class ConversationSession:
     current_topic: Optional[Topic] = None
     tool_name: str = "get_other" # 默认路由到通用问答
 
+    # 待确认状态 -- 用于 confirm: true 的两轮交互
+    # 第N轮写入，第N+1轮读取后清空
+
+    pending_confirm: bool = False # 是否正在等待用户确认
+    pending_confirm_tool: str = "" # 待执行的工具名(确认后路由到它)
+    pending_confirm_query: str = "" # 用户原始输入(确认后原样传给工具)
+
     # LangChain 官方的内存历史对象, 直接塞进 Prompt 的 MessagesPlaceholder
+
 
     chat_history: InMemoryChatMessageHistory = field(
         default_factory= InMemoryChatMessageHistory
