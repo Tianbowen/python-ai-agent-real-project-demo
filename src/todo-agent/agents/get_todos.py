@@ -1,7 +1,7 @@
 # agents/get_todos.py
 
 import json
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
 from agents.abstract_tool import AbstractTool
@@ -53,6 +53,7 @@ class GetTodosTool(AbstractTool):
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", _SYSTEM),
+            MessagesPlaceholder("chat_history"),
             ("human", _PROMPT),
         ])
 
@@ -62,6 +63,7 @@ class GetTodosTool(AbstractTool):
         try:
             async for chunk in chain.astream({
                 "todos_json": json.dumps(todos_data, ensure_ascii=False),
+                "chat_history": self.context.chat_history.messages,
                 "query": query
             }):
                 token = chunk.content

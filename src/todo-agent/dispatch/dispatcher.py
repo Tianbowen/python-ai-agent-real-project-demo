@@ -153,6 +153,13 @@ class Dispatcher:
                 
         try:
             await proxy.aprocess()
+
+            # 工具执行成功后，把本轮对话写入历史，供下一轮LLM 读取
+            answer = handler.get_full_text()
+            if context.ctx and effective_query and answer:
+                context.ctx.add_history(effective_query, answer=answer)
+                context_manager.save_session(context=context) # 连同历史一起持久化
+                
         except BizException as e:
             handler.set_error(e.message)
             await handler.end()

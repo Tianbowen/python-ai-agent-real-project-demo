@@ -2,7 +2,7 @@
 # 查询今日数据
 
 import json
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
 from agents.abstract_tool import AbstractTool
@@ -70,6 +70,7 @@ class GetTodayTodosTool(AbstractTool):
         # 步骤4 LLM 流式生成今日汇报
         prompt = ChatPromptTemplate.from_messages([
             ("system", _SYSTEM),
+            MessagesPlaceholder("chat_history"),
             ("human", _PROMPT),
         ])
         chain = prompt | self._llm
@@ -78,6 +79,7 @@ class GetTodayTodosTool(AbstractTool):
         try:
             async for chunk in chain.astream({
                 "todos_json": json.dumps(todos_data, ensure_ascii=False),
+                "chat_history": self.context.chat_history.messages,
                 "query": query
             }):
                 token = chunk.content

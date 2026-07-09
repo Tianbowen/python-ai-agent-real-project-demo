@@ -70,6 +70,13 @@ biz_codes:
           - name: 创建任务
             description: 新建一个代办事项，需要标题和可选的截止时间
             tool: create_todo
+            examples:
+              - 帮我添加一个买菜任务
+              - 明天下午3点买菜
+              - 下周一开周会
+              - 提醒我后天交报告
+              - 今晚8点打电话给客户
+              - 记一下：明天要取快递
             slots:
               - code: title
                 name: 任务标题
@@ -132,6 +139,13 @@ biz_codes:
           - name: 智能完成或创建
             tool: smart_todo
             description: 完成任务
+
+          - name: 智能操作
+            tool: tool_agent
+            description: 需要多步骤或复合操作时，由 Agent 自动决策调用工具
+            examples:
+              - 把买菜改成明天，优先级改成高
+              - 查一下明天有哪些高优先级任务
 
       - name: 统计分析
         description: 查看任务完成情况，进度统计

@@ -59,6 +59,9 @@ class ToolRegistry:
         from agents.query_todos import QueryTodosTool
         cls.register(QueryTodosTool)
 
+        from agents.tool_agent import ToolAgentTool
+        cls.register(ToolAgentTool)
+        
         cls._initialized = True
         logger.info(f"工具注册完成，共{len(cls._registry)} 个工具: {list(cls._registry.keys())}")
 

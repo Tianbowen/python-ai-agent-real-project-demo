@@ -48,7 +48,7 @@ class GetOtherTool(AbstractTool):
         # 构建 Prompt
         prompt = ChatPromptTemplate.from_messages([
             ("system", SYSTEM_PROMPT),
-            MessagesPlaceholder(variable_name="history"),
+            MessagesPlaceholder("chat_history"),
             ("human", "{query}")
         ])
 
@@ -58,7 +58,7 @@ class GetOtherTool(AbstractTool):
         full_text = ""
         try:
             async for chunk in chain.astream({
-                "history": history,
+                "chat_history": history,
                 "query": query
             }):
                 token = chunk.content
