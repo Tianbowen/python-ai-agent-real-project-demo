@@ -61,6 +61,9 @@ class ToolRegistry:
 
         from agents.tool_agent import ToolAgentTool
         cls.register(ToolAgentTool)
+
+        from agents.lang_graph_agent import LangGraphAgentTool
+        cls.register(LangGraphAgentTool)
         
         cls._initialized = True
         logger.info(f"工具注册完成，共{len(cls._registry)} 个工具: {list(cls._registry.keys())}")
