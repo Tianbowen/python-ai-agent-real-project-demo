@@ -68,9 +68,9 @@ uv run python main.py
 
 **Todo项目中两者并存： 日常对话用Agent；**
 
-![alt text](..\images\devui-chat-screenshot.png)
-![alt text](..\images\devui-chat-screenshot-1.png)
-![alt text](..\images\devui-chat-screenshot-2.png)
+![alt text](../images/devui-chat-screenshot.png)
+![alt text](../images/devui-chat-screenshot-1.png)
+![alt text](../images/devui-chat-screenshot-2.png)
 
 ## Functional Workflow(函数式工作流)
 
@@ -93,5 +93,5 @@ uv run python main.py
 - ctx.yield_output(...)：工作流最终输出
 - WorkflowBuilder(...).add_edge(...).build()：组装图
 - 
-![alt text](..\images\devui-workflow-graph-screenshot.png)
-![alt text](..\images\devui-workflow-graph-screenshot-2.png)
+![alt text](../images/devui-workflow-graph-screenshot.png)
+![alt text](../images/devui-workflow-graph-screenshot-2.png)
