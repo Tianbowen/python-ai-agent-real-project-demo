@@ -103,3 +103,61 @@ uv run python main.py
 | 读取挂起状态 | result.get_final_state() == WorkflowRunState.IDLE_WITH_PENDING_REQUESTS |
 | 读取挂起的请求 | result.get_request_info_events() |
 | 拒绝/同意恢复 | workflow.run(responses={"request_id": True/False}) |
+
+## Context Provider - 上下文提供程序
+
+### 核心作用：解决"记忆"与"知识"问题
+
+- 长期/外部记忆：让智能体"记住"用户偏好或从外部知识库(如数据库，搜索引擎)检索信息。
+- 动态上下文注入：在每次对话前，动态添加指令、工具或数据，以影响智能体的行为。
+
+问题场景：TodoAgent 的 instructions 是硬编码字符串，Agent 不知道今天是几号。用户说"明天到期"，靠的是 TodoService.parse_due_date() 在工具层解析——但如果用户问"今天有什么待办"，模型就不知道"今天"是哪一天。
+
+解决方案：ContextProvider.before_run() 在每次模型调用前注入动态上下文，不污染静态instructions(指智能体初始化时硬编码写死的，在运行过程中不会动态改变的系统提示词)
+
+```txt
+
+每次 AgentSession.send_message()
+        │
+        ▼
+ContextProvider.before_run() <- 注入今日日期、用户名等
+        │
+        ▼
+    模型推理
+        │
+        ▼
+ContextProvider.after_run() <- 可选：处理响应、存数据
+```
+**本节完整知识点 执行时序**
+
+```txt
+
+agent.run(msg, session=session)
+        │
+        ├─ TodayDateProvider.before_run()  → extend_instructions("今天是 2026-07-22")
+        ├─ UserNameProvider.before_run()   → extend_instructions("用户是小明")
+        │
+        ▼
+   模型推理（拿到拼装后的 instructions）
+        │
+        ▼
+   ContextProvider.after_run()   ← 本节未用，下节讲
+
+```
+
+**三个核心方法**
+| 方法 | 用途 |
+| context.extend_instructions(source_id, text) | 追加系统级提示词 |
+| context.extend_messages(source_id, messages) | 注入历史消息（如摘要、示例）|
+| context.extend_tools(source_id, tools) | 动态注入工具（按会话权限控制）|
+
+**state 字典（跨轮次）**
+before_run / after_run 都收到 state: dict，这个字典在同一个 Provider 实例的生命周期内跨轮次保留，可以用来做计数、缓存等：
+
+```python
+
+async def before_run(self, *, agent, session, context, state):
+    state["call_count"] = state.get("call_count", 0) + 1
+    context.extend_instructions(self.source_id, f"这是第 {state['call_count']} 次对话。")
+
+```

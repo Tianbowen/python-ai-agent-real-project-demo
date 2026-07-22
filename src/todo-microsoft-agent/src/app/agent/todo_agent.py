@@ -7,8 +7,9 @@ from agent_framework.openai import OpenAIChatCompletionClient
 from dotenv import load_dotenv
 
 from app.agent.tools import complete_todo, create_todo, delete_todo, update_todo, list_todos
+from app.context_providers import TodayDateProvider, UserNameProvider
 
-def build_todo_agent() -> Agent:
+def build_todo_agent(username: str = "用户") -> Agent:
     load_dotenv()
 
     client = OpenAIChatCompletionClient(
@@ -40,5 +41,9 @@ def build_todo_agent() -> Agent:
             update_todo,
             delete_todo,
         ],
+        context_providers=[
+            TodayDateProvider(),
+            UserNameProvider(username=username),
+        ]
     )
 
