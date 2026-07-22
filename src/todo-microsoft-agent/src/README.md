@@ -95,3 +95,11 @@ uv run python main.py
 - 
 ![alt text](../images/devui-workflow-graph-screenshot.png)
 ![alt text](../images/devui-workflow-graph-screenshot-2.png)
+
+## 已学知识点回顾
+| 概念 | 关键 API|
+| -- | -- |
+| 挂起工作流 | await ctx.request_info(data, type, request_id=...) |
+| 读取挂起状态 | result.get_final_state() == WorkflowRunState.IDLE_WITH_PENDING_REQUESTS |
+| 读取挂起的请求 | result.get_request_info_events() |
+| 拒绝/同意恢复 | workflow.run(responses={"request_id": True/False}) |
