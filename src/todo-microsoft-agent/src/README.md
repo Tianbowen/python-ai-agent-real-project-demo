@@ -279,3 +279,89 @@ MAF 内置两种存储：
 | allowed_checkpoint_types | 自定义dataclass需要声明, 格式"模块:类名" |
 | 重放语义 | 恢复时从头重放函数, request_info之前的代码会再次执行 |
 | 设计约束 | 跨进程 checkpoint 必须配合持久化的业务存储，不能用内存存储 |
+
+## 目前 MAF 核心功能已基本覆盖
+
+| 状态 | 模块 |
+| -- | -- |
+| √ | Agent + Tools + Tool Approval |
+| √ | DevUI |
+| √ | Functional Wrokflow + Graph Workflow |
+| √ | Workflow HITL |
+| √ | Context Provider |
+| √ | Middleware |
+| √ | Checkpoint |
+
+### 剩余可学方向
+
+- **OpenTelemetry 可观测性** -- 用MAF内置trace导出到Jaeger/控制台，排查工具调用链路
+- **MCP(Model Context Protocol)** -- 把 TodoAgent的工具暴漏为MCP Server,或接入外部 MCP Server
+- **AG-UI + CopilotKit** -- 官方 Web UI接入，代替 DevUI，生产级前端
+
+## MCP
+
+**MCP(Model Context Protocol)** 是 Anthropic 发布的开放标准，把AI工具暴露为可互操作的服务。
+
+学习两件事：
+
+```txt
+1. TodoAgent -> MCP Server (暴露工具给外界)
+        ↑ agent.as_mcp_server()
+
+2. 另一个 Agent -> MCP Client(消费 MCP Server的工具)
+        ↑ MCPStdioTool / MCPStreamableHTTPTool
+```
+
+用Stdio传输最简单 -- Server作为子进程运行，Client通过标注输入输出通信，不需要启动HTTP服务器。
+
+### 重要认知：
+
+**as_mcp_server()** 暴露的是Agent，不是单个工具
+
+agent.as_mcp_server() 把整个Agent封装成一个MCP工具，名字就是Agent的name
+
+```txt
+Consumer Agent
+    │
+    └─ 调用 MCP 工具 "TodoMCPAgent" (传自然语言)
+        ↓
+        MCP Server (TodoMCPAgent)
+            │
+            ├─ create_todo
+            ├─ list_todos
+            └─ ...（内部工具，对外不可见）
+```
+
+**Consumer**传进去的是自然语言，Server内部的Agent再决定调哪个具体工具。这是Agent-as-a-Tool模式，适合封装复杂Agent能力为其他系统调用。
+
+#### 如果想暴露单个工具(不经过Agent推理)
+
+改用 FastMCP直接注册函数：
+
+```python
+
+# 换用 FastMCP, 直接暴露函数工具
+from mcp.server.fastmcp import FastMCP
+from app.agent.tools import create_todo, list_todos, complete_todo, update_todo, delete_todo
+
+mcp = FastMCP("todo-tools")
+
+@mcp.tool()
+async def mcp_create_todo(title: str, priority: str = "medium") -> str:
+    ...
+```
+
+`这需要手动桥接每个工具，失去了MAF的自动化优势。`
+
+**Agent-as-Tool模式更复合MAF的设计理念------ Consumer只管说需求，Server内部自己编排。**
+
+### 总结
+
+| 概念 | 要点 |
+| -- | -- |
+| agent.as_mcp_server() | 把Agent封装为MCP Server,暴露为单一AI工具 |
+| MCPStdioTool | 以子进程方式连接MCP Server, stdio通信 |
+| async with mcp_tool | 必须用上下文管理器，负责连接/断开子进程 |
+| mcp_tool.functions | 查看 Server 暴露的工具列表 |
+| Agent-as-Tool模式 | 把整个Agent作为工具组合进更大的系统 |
+
