@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from app.agent.tools import complete_todo, create_todo, delete_todo, update_todo, list_todos
 from app.context_providers import TodayDateProvider, UserNameProvider
+from app.middleware import TimingMiddleware, tool_audit_middleware
 
 def build_todo_agent(username: str = "用户") -> Agent:
     load_dotenv()
@@ -44,6 +45,10 @@ def build_todo_agent(username: str = "用户") -> Agent:
         context_providers=[
             TodayDateProvider(),
             UserNameProvider(username=username),
+        ],
+        middleware=[
+            tool_audit_middleware, # 装饰器写法直接传
+            TimingMiddleware(), # 类写法传实例
         ]
     )
 

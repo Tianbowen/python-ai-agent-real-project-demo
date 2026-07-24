@@ -161,3 +161,79 @@ async def before_run(self, *, agent, session, context, state):
     context.extend_instructions(self.source_id, f"这是第 {state['call_count']} 次对话。")
 
 ```
+
+## Middleware 中间件
+
+**一种强大的可插拔机制，允许你在Agent执行的不同阶段"拦截"、检查和修改其行为** 理解为 Agent处理流程中的"拦截器"或"过滤器"
+
+中间件来做什么：
+
+- 日志与监控：记录每一次Agent调用的请求和响应，用于调试与性能监控。
+- 安全与校验：在请求到达核心逻辑前，验证输入内容是否包含敏感信息，或检查调用者权限。
+- 错误处理：集中捕获Agent或工具调用过程中的异常，并执行重试、降级或返回友好的错误信息。
+- 结果转换：在Agent生成最终回复前，对结果进行格式化或添加额外信息。
+- 注入上下文：在请求被处理前，向其中注入额外的系统提示或消息。
+
+### 中间件的类型
+
+提供了三种不同类型的中间件，以实现在不同层面进行拦截：
+
+1. Agent运行中间件(Agent Run Middleware)
+   - 拦截目标：整个Agent的 run() 方法调用。
+   - 作用范围：最顶层，包裹 Agent 的整个执行过程，包括上下文解析和后续的LLM调用。
+   - 适用场景：对请求和响应进行全局性的日志记录、性能监控、权限校验等。
+2. 函数调用中间件(Function Calling Middleware)
+   - 拦截目标：Agent执行的每一个工具/函数调用
+   - 作用范围：工具调用层，位于Agent和具体工具函数之间
+   - 适用场景：记录工具调用的详细参数和返回值，对工具调用进行超时控制、结果缓存或错误统一处理。   
+3. 聊天中间件(IChatClient Middleware / Chat Middleware)
+   - 拦截目标：对底层LLM聊天客户端(IChatClient)的调用
+   - 作用范围：最底层，位于Agent和LLM API之间。
+   - 适用场景：在请求发送给LLM前修改消息队列(如动态注入系统提示)，或对LLM的原始响应进行处理。
+
+```txt
+
+agent.run(msg)
+    │
+    ▼
+AgentMiddleware <- 整个 Agent 循环(含多轮工具调用)
+    │
+    ▼
+ChatMiddleware <- 单次模型 HTTP 请求
+    │
+    ▼
+FunctionMiddleware <- 单次工具函数调用 <- 今天重点
+
+```
+
+**FunctionMiddleware** 最实用：工具调用前后可以做日志、计时、权限拦截、完全不改工具代码本身。
+两种写法都支持：
+    - 装饰器 @function_middleware：一个异步函数，适合简单逻辑
+    - 类 class Xxx(FunctionMiddleware)：需要构造函数参数时用
+
+
+### 中间件 vs. 上下文提供程序 (Context Provider)
+
+为了帮你更好地区分，这里做一个对比：
+
+特性	中间件 (Middleware)	上下文提供程序 (Context Provider)
+核心目的	拦截和修改 Agent 的行为与数据流	提供和注入额外的上下文信息
+作用方式	像一个包装器，包裹住执行过程	像一个数据源，在执行前被调用来获取数据
+触发时机	在 Agent 执行前后都可以介入	主要在 LLM 调用之前运行
+典型用途	日志、鉴权、错误处理、结果转换	长期记忆、动态指令、RAG 检索结果
+灵活性	可以修改输入和输出，甚至中止执行	主要负责添加信息，不直接修改用户输入
+简单来说：上下文提供程序负责“准备什么”信息，而中间件负责“怎么处理”这些信息和整个流程。
+
+### Instructions(agent的系统提示(System Prompt)) vs Middleware
+
+**Middleware是安全网，不是第一道防线**
+
+| 层次 | 作用 | 本次表现 |
+| -- | -- | -- |
+| instructions | 告诉模型"能做什么" | 模型自觉不调用写工具 |
+| ReadOnlyGuardMiddleware | 兜底拦截(模型绕过时) | 本次未触发 |
+
+真正需要Middleware 兜底的场景：
+- 模型幻觉(该拒绝却调用了)
+- 工具被直接调用(绕过模型，如测试脚本)
+- 多个Agent共享同一套工具，权限因调用方不同而异。
