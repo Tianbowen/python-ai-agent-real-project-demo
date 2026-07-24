@@ -1,0 +1,25 @@
+{
+  "workflow_name": "delete_todo_hitl_workflow",
+  "graph_signature_hash": "f9ccbd3390df2398a4165f29aaa7beabf6880acc527e4f6a5519f2bb87558368",
+  "checkpoint_id": "bf7e10cf-b9c9-41b3-94d3-50b70f22e9dc",
+  "previous_checkpoint_id": null,
+  "timestamp": "2026-07-24T07:12:22.711943+00:00",
+  "messages": {},
+  "state": {
+    "_step_cache": {},
+    "_step_cache_auto_request_info_counts": {},
+    "_original_message": {
+      "__pickled__": "gAWVbgAAAAAAAACMHmFwcC53b3JrZmxvd3MuZGVsZXRlX3RvZG9faGl0bJSMD0RlbGV0ZVRvZG9JbnB1dJSTlCmBlH2UjAd0b2RvX2lklIwkN2UxZjllZjEtNDhjMS00NzVmLTlkZWQtMzE1ZWFiMzczNWVhlHNiLg==",
+      "__type__": "app.workflows.delete_todo_hitl:DeleteTodoInput"
+    }
+  },
+  "pending_request_info_events": {
+    "delete_confirm": {
+      "__pickled__": "gAWV3AEAAAAAAACMImFnZW50X2ZyYW1ld29yay5fd29ya2Zsb3dzLl9ldmVudHOUjA1Xb3JrZmxvd0V2ZW50lJOUKYGUfZQojAR0eXBllIwMcmVxdWVzdF9pbmZvlIwEZGF0YZR9lCiMB3RvZG9faWSUjCQ3ZTFmOWVmMS00OGMxLTQ3NWYtOWRlZC0zMTVlYWIzNzM1ZWGUjAV0aXRsZZSMEUNoZWNrcG9pbnQg5ryU56S6lIwGcHJvbXB0lIwv56Gu6K6k5Yig6Zmk5b6F5Yqe44CMQ2hlY2twb2ludCDmvJTnpLrjgI3lkJfvvJ+UdYwGb3JpZ2lulGgAjBNXb3JrZmxvd0V2ZW50U291cmNllJOUjAhFWEVDVVRPUpSFlFKUjAVzdGF0ZZROjAdkZXRhaWxzlE6MC2V4ZWN1dG9yX2lklE6MC19yZXF1ZXN0X2lklIwOZGVsZXRlX2NvbmZpcm2UjBNfc291cmNlX2V4ZWN1dG9yX2lklIwZZGVsZXRlX3RvZG9faGl0bF93b3JrZmxvd5SMDV9yZXF1ZXN0X3R5cGWUjAhidWlsdGluc5SMBGRpY3SUk5SMDl9yZXNwb25zZV90eXBllGgdjARib29slJOUjAlpdGVyYXRpb26UTnViLg==",
+      "__type__": "agent_framework._workflows._events:WorkflowEvent"
+    }
+  },
+  "iteration_count": 0,
+  "metadata": {},
+  "version": "1.0"
+}

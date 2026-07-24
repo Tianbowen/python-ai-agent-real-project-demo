@@ -237,3 +237,45 @@ FunctionMiddleware <- 单次工具函数调用 <- 今天重点
 - 模型幻觉(该拒绝却调用了)
 - 工具被直接调用(绕过模型，如测试脚本)
 - 多个Agent共享同一套工具，权限因调用方不同而异。
+
+
+## Checkpoint 持久化
+
+HITL，run(payload)挂起后，挂起状态只活在内存里--进程一重启，状态就没了。
+
+Checkpoint把挂起状态序列化到尾部存储(文件/内存)，用checkpoint_id索引。进程重启后可以用checkpoint_id精确恢复。
+
+```txt
+进程 A：run(payload) -> 挂起 -> 存 checkpoint -> 返回 checkpoint_id
+进程 A 退出
+
+进程 B：run(checkpoint_id=..., response={...}) -> 从 checkpoint 恢复继续执行
+
+```
+
+MAF 内置两种存储：
+
+| 类 | 用途 |
+| -- | -- |
+| InMemoryCheckpointStorage | 测试/同一进程内演示 |
+| FileCheckpointStorage(path) | 持久化到磁盘，跨进程恢复 |
+
+### 关键参数说明
+
+| 参数 | 说明 |
+| -- | -- |
+| checkpoint_storage=storage | 传给run(), 框架自动在挂起时保存 |
+| checkpoint_id=... | 传给第二次run(), 框架从存储加载后继续 |
+| allowed_checkpoint_types | 自定义的dataclass需要在这里声明，否则反序列化时被拒绝 |
+
+### 总结
+
+| 概念 | 要点 |
+| -- | -- |
+| checkpoint_storage=storage | 传给run(), 框架在 request_info 挂起时自动保存 |
+| checkpoint_id=... | 传给第二次run(), 从存储加载后继续执行 |
+| InMemoryCheckpointStorage | 同进程测试用，简单 |
+| FileCheckpointStorage(path) | 磁盘持久化，跨进程恢复 |
+| allowed_checkpoint_types | 自定义dataclass需要声明, 格式"模块:类名" |
+| 重放语义 | 恢复时从头重放函数, request_info之前的代码会再次执行 |
+| 设计约束 | 跨进程 checkpoint 必须配合持久化的业务存储，不能用内存存储 |
